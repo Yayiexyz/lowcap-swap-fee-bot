@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0a0f1c" />
-  <title>LowCap Swap Fee Bot v4 Pro</title>
+  <title>LowCap Swap Fee Bot v4.1 Hosted Pro</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -16,7 +16,7 @@
       <div class="brandWrap">
         <div class="brandMark">L</div>
         <div>
-          <h1>LowCap Swap Fee Bot <span>v4 Pro</span></h1>
+          <h1>LowCap Swap Fee Bot <span>v4.1 Hosted Pro</span></h1>
           <p class="sub">Base • Uniswap v3 • WETH/USDC • 0.30% fee tier • Fixed ±3% active range</p>
         </div>
       </div>
@@ -54,13 +54,13 @@
           <div class="autoItem"><span>Auto-rebalance</span><b id="autoModeText">ON</b></div>
           <div class="autoItem"><span>Target range</span><b>±3%</b></div>
           <div class="autoItem"><span>Fee tier</span><b>0.30%</b></div>
-          <div class="autoItem"><span>Last update</span><b id="lastUpdate">—</b></div>
+          <div class="autoItem"><span>Last update</span><b id="lastUpdate">—</b></div>\n          <div class="autoItem"><span>Exit confirmation</span><b>30 sec</b></div>\n          <div class="autoItem"><span>Gas safety</span><b id="gasSafety">CHECKING</b></div>
         </div>
         <div class="buttonRow">
           <button id="toggleAutoRebalanceBtn" class="secondary">Pause Auto-Rebalance</button>
           <button id="scanBtn" class="secondary">Rescan Pool</button>
         </div>
-        <p class="note">When the position becomes OUT OF RANGE, the bot automatically starts a ±3% recenter flow. Phantom still shows Approve/Reject for every on-chain transaction.</p>
+        <p class="note">When the position stays OUT OF RANGE for 30 seconds, the bot starts a fixed ±3% recenter flow. A gas-reserve guard and cooldown reduce accidental churn. Phantom still shows Approve/Reject for every on-chain transaction.</p>
       </section>
     </div>
 
@@ -121,9 +121,9 @@
       <pre id="log"></pre>
     </section>
 
-    <footer><b>Always-on note:</b> the LP earns on-chain even when this page is closed. Auto-monitor/rebalance logic runs only while this web app is running in a browser. Hosting removes the CMD requirement, but a browser tab still needs to remain active for wallet-driven automation.</footer>
+    <footer><b>Hosted-mode note:</b> the LP earns on-chain even when this page is closed. The hosted site needs no CMD. Auto-monitor/rebalance logic still requires a running browser session, and Phantom approval remains required for transactions.</footer>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js"></script>\n  <script>\n    if ("serviceWorker" in navigator) {\n      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));\n    }\n  </script>
 </body>
 </html>
