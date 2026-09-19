@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a0f1c" />
+  <title>LowCap Swap Fee Bot v4 Pro</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bgGlow glowA"></div>
+  <div class="bgGlow glowB"></div>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brandWrap">
+        <div class="brandMark">L</div>
+        <div>
+          <h1>LowCap Swap Fee Bot <span>v4 Pro</span></h1>
+          <p class="sub">Base • Uniswap v3 • WETH/USDC • 0.30% fee tier • Fixed ±3% active range</p>
+        </div>
+      </div>
+      <div class="topActions">
+        <div id="liveBadge" class="pill neutral"><span class="dot"></span> DISCONNECTED</div>
+        <button id="connectBtn" class="primary">Connect Phantom</button>
+      </div>
+    </header>
+
+    <section class="heroGrid">
+      <div class="heroMetric"><span>Bot status</span><strong id="botStatus">Waiting</strong><small id="browserStatus">Browser monitor inactive</small></div>
+      <div class="heroMetric"><span>ETH price</span><strong id="ethPrice">—</strong><small>Base WETH/USDC</small></div>
+      <div class="heroMetric"><span>Position</span><strong id="heroPosition">—</strong><small id="heroEdge">No position loaded</small></div>
+      <div class="heroMetric"><span>Uncollected fees</span><strong id="heroFees">—</strong><small id="feePace">Fee pace: learning…</small></div>
+    </section>
+
+    <div class="layout2">
+      <section class="panel">
+        <div class="panelHead"><div><p class="eyebrow">WALLET</p><h2>Phantom on Base</h2></div><button id="refreshBtn" class="ghost">Refresh</button></div>
+        <div class="walletRows">
+          <div class="walletRow"><span>Address</span><b id="address">—</b></div>
+          <div class="walletRow"><span>Network</span><b id="network">—</b></div>
+          <div class="walletRow"><span>Native ETH</span><b id="ethBal">—</b></div>
+          <div class="walletRow"><span>WETH</span><b id="wethBal">—</b></div>
+          <div class="walletRow"><span>USDC</span><b id="usdcBal">—</b></div>
+          <div class="walletRow"><span>Gas reserve</span><b id="gasReserve">—</b></div>
+        </div>
+      </section>
+
+      <section class="panel accentPanel">
+        <div class="panelHead"><div><p class="eyebrow">AUTOMATION</p><h2>Range Guardian</h2></div><div id="autoRebalanceStatus" class="miniPill success">ARMED</div></div>
+        <div class="automationGrid">
+          <div class="autoItem"><span>Phantom reconnect</span><b id="autoConnectStatus">AUTO</b></div>
+          <div class="autoItem"><span>Monitor interval</span><b>15 sec</b></div>
+          <div class="autoItem"><span>Auto-rebalance</span><b id="autoModeText">ON</b></div>
+          <div class="autoItem"><span>Target range</span><b>±3%</b></div>
+          <div class="autoItem"><span>Fee tier</span><b>0.30%</b></div>
+          <div class="autoItem"><span>Last update</span><b id="lastUpdate">—</b></div>
+        </div>
+        <div class="buttonRow">
+          <button id="toggleAutoRebalanceBtn" class="secondary">Pause Auto-Rebalance</button>
+          <button id="scanBtn" class="secondary">Rescan Pool</button>
+        </div>
+        <p class="note">When the position becomes OUT OF RANGE, the bot automatically starts a ±3% recenter flow. Phantom still shows Approve/Reject for every on-chain transaction.</p>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panelHead"><div><p class="eyebrow">STRATEGY</p><h2>Low-capital setup</h2></div><div class="lockTag">LOCKED: 0.30% / ±3%</div></div>
+      <div class="inputGrid">
+        <label>Total capital (USD)<input id="capitalUsd" type="number" value="30.22" min="5" step="0.01"></label>
+        <label>Keep as ETH reserve (USD)<input id="reserveUsd" type="number" value="8" min="1" step="0.25"></label>
+        <label>Fee tier<select id="feeTier" disabled><option value="3000" selected>0.30%</option></select></label>
+        <label>Range ± %<input id="rangePct" type="number" value="3" readonly></label>
+        <label>Swap slippage %<input id="slippagePct" type="number" value="1" min="0.1" max="5" step="0.1"></label>
+      </div>
+      <div class="buttonRow wrap">
+        <button id="previewExistingBtn" class="secondary">Preview Existing Balance</button>
+        <button id="prepareExistingBtn" class="primary">Prepare ETH + USDC</button>
+        <button id="useWalletBtn" class="secondary">Use Current WETH + USDC</button>
+        <button id="mintBtn" class="primary">Create LP Position</button>
+      </div>
+      <div class="statusStrip">
+        <div><span>Balance plan</span><b id="existingPlanSummary">Connect Phantom to preview.</b></div>
+        <div><span>Prepared</span><b id="prepSummary">None</b></div>
+        <div><span>Strategy</span><b id="strategySummary">Fixed ±3%, 0.30% fee tier.</b></div>
+      </div>
+    </section>
+
+    <section class="panel positionPanel">
+      <div class="panelHead">
+        <div><p class="eyebrow">LIVE POSITION</p><h2>Range & fee monitor</h2></div>
+        <div class="positionLoad"><input id="tokenId" type="text" placeholder="Position NFT ID"><button id="positionBtn" class="secondary">Load</button></div>
+      </div>
+      <div class="positionGrid">
+        <div class="bigStatus"><span>Status</span><strong id="posStatus">—</strong><small id="rangeHint">Load a position to begin live monitoring.</small></div>
+        <div class="metricCard"><span>Current price</span><b id="posPrice">—</b></div>
+        <div class="metricCard"><span>LP range</span><b id="posRange">—</b></div>
+        <div class="metricCard"><span>Fee tier</span><b id="posFee">—</b></div>
+        <div class="metricCard"><span>Edge distance</span><b id="edgeDistance">—</b></div>
+        <div class="metricCard"><span>Uncollected fees</span><b id="posFees">—</b></div>
+      </div>
+      <div class="rangeViz">
+        <div class="rangeLabels"><span id="rangeLowLabel">Lower</span><b>ACTIVE RANGE</b><span id="rangeHighLabel">Upper</span></div>
+        <div class="rangeTrack"><div class="rangeFill" id="rangeFill"></div><div class="rangeMarker" id="rangeMarker"></div></div>
+      </div>
+      <div class="buttonRow wrap">
+        <button id="collectTokensBtn" class="secondary">Collect WETH + USDC</button>
+        <button id="collectEthBtn" class="secondary">Collect All as ETH</button>
+        <button id="rebalanceBtn" class="warning">Recenter Now</button>
+      </div>
+      <div id="collectSummary" class="statusBox">Fees stay in the LP until you collect them. Auto-rebalance does not auto-collect while the position is healthy.</div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHead"><div><p class="eyebrow">POOL</p><h2>0.30% WETH/USDC state</h2></div></div>
+      <div class="tableWrap"><table><thead><tr><th>Tier</th><th>Pool</th><th>ETH price</th><th>Liquidity (raw)</th><th>Status</th></tr></thead><tbody id="poolRows"><tr><td colspan="5">Connect Phantom to scan.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="panel logPanel">
+      <div class="panelHead"><div><p class="eyebrow">SYSTEM</p><h2>Activity log</h2></div><button id="clearLogBtn" class="ghost small">Clear</button></div>
+      <pre id="log"></pre>
+    </section>
+
+    <footer><b>Always-on note:</b> the LP earns on-chain even when this page is closed. Auto-monitor/rebalance logic runs only while this web app is running in a browser. Hosting removes the CMD requirement, but a browser tab still needs to remain active for wallet-driven automation.</footer>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
