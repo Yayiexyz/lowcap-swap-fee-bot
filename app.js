@@ -54,6 +54,35 @@ function C(write=true){const r=runner(write);return{
  factory:new ethers.Contract(A.FACTORY,FACTORY,r),quoter:new ethers.Contract(A.QUOTER,QUOTER,r),
  router:new ethers.Contract(A.ROUTER,ROUTER,r),npm:new ethers.Contract(A.NPM,NPM,r)
 }}
+
+function notifyUser(title,body){
+ if(!st.alertsEnabled||!("Notification" in window)||Notification.permission!=="granted")return;
+ try{new Notification(title,{body,tag:"lowcap-range-guardian"})}catch{}
+}
+async function toggleAlerts(){
+ if(!("Notification" in window)){log("Browser notifications are not supported here.");return}
+ if(!st.alertsEnabled){
+  const p=await Notification.requestPermission();
+  if(p!=="granted"){log("Notification permission was not granted.");return}
+  st.alertsEnabled=true;localStorage.setItem("lowcap_alerts","on");$("notifyBtn").textContent="Disable Alerts";log("Range alerts enabled.")
+ }else{
+  st.alertsEnabled=false;localStorage.setItem("lowcap_alerts","off");$("notifyBtn").textContent="Enable Alerts";log("Range alerts disabled.")
+ }
+}
+async function toggleWakeLock(){
+ if(!("wakeLock" in navigator)){log("Screen Wake Lock is not supported by this browser.");return}
+ if(st.wakeLock){try{await st.wakeLock.release()}catch{}st.wakeLock=null;$("wakeBtn").textContent="Keep Screen Awake";log("Screen wake lock released.");return}
+ try{
+  st.wakeLock=await navigator.wakeLock.request("screen");$("wakeBtn").textContent="Release Screen Awake";log("Screen wake lock enabled while this page remains visible.");
+  st.wakeLock.addEventListener("release",()=>{st.wakeLock=null;if($("wakeBtn"))$("wakeBtn").textContent="Keep Screen Awake"})
+ }catch(e){log("Wake lock unavailable: "+(e?.message||e))}
+}
+function gasGuardOkay(){
+ const usd=Number(($("gasReserve")?.textContent||"").replace(/[^0-9.]/g,""));
+ const ok=Number.isFinite(usd)&&usd>=2.5;
+ if($("gasSafety")){$("gasSafety").textContent=ok?"OK":"LOW GAS";$("gasSafety").className=ok?"okText":"badText"}
+ return ok
+}
 function setBusy(v){st.busy=v;document.querySelectorAll("button").forEach(b=>b.disabled=v)}
 async function act(fn){if(st.busy)return;setBusy(true);try{await fn()}catch(e){const m=e?.shortMessage||e?.reason||e?.message||String(e);log("ERROR: "+m);alert(m)}finally{setBusy(false)}}
 
@@ -94,7 +123,7 @@ async function balances(){
  $("ethBal").textContent=`${Number(ethers.formatEther(e)).toFixed(6)} ETH`;
  $("wethBal").textContent=`${Number(ethers.formatEther(w)).toFixed(6)} WETH`;
  $("usdcBal").textContent=`${Number(ethers.formatUnits(u,6)).toFixed(2)} USDC`;
- const usd=Number(ethers.formatEther(e))*st.ethPrice;$("gasReserve").textContent=money(usd);$("gasReserve").className=usd<2?"badText":usd<5?"warnText":"okText";
+ const usd=Number(ethers.formatEther(e))*st.ethPrice;$("gasReserve").textContent=money(usd);$("gasReserve").className=usd<2.5?"badText":usd<5?"warnText":"okText";gasGuardOkay();
  return{eth:e,weth:w,usdc:u}
 }
 async function refreshAll(){if(!provider)return;await scanPool();await balances();if($("tokenId").value.trim())await loadPosition(true);$("lastUpdate").textContent=new Date().toLocaleTimeString()}
@@ -208,19 +237,19 @@ async function monitor(){
  catch(e){log("Monitor warning: "+(e?.message||e))}
 }
 function startMonitor(){clearInterval(st.timer);st.timer=setInterval(monitor,15000);$("browserStatus").textContent="Live monitor every 15 sec"}
-function autoUI(){$("autoModeText").textContent=st.auto?"ON":"OFF";$("autoRebalanceStatus").textContent=st.auto?"ARMED":"PAUSED";$("toggleAutoRebalanceBtn").textContent=st.auto?"Pause Auto-Rebalance":"Enable Auto-Rebalance"}
+function autoUI(){$("autoModeText").textContent=st.auto?"ON":"OFF";$("autoRebalanceStatus").textContent=st.auto?"ARMED":"PAUSED";$("toggleAutoRebalanceBtn").textContent=st.auto?"Pause Auto-Rebalance":"Enable Auto-Rebalance";if($("notifyBtn"))$("notifyBtn").textContent=st.alertsEnabled?"Disable Alerts":"Enable Alerts"}
 function strategy(){const c=Number($("capitalUsd").value||0),r=Number($("reserveUsd").value||0);$("strategySummary").textContent=`Deploy target ~${money(Math.max(0,c-r))} • reserve ~${money(r)} • fixed 0.30% • fixed ±3%`}
 
 $("connectBtn").onclick=()=>act(connect);$("refreshBtn").onclick=()=>act(refreshAll);$("scanBtn").onclick=()=>act(scanPool);
 $("previewExistingBtn").onclick=()=>act(previewPlan);$("prepareExistingBtn").onclick=()=>act(prepareExisting);$("useWalletBtn").onclick=()=>act(useCurrent);$("mintBtn").onclick=()=>act(mintPrepared);
 $("positionBtn").onclick=()=>act(()=>loadPosition(false));$("collectTokensBtn").onclick=()=>act(collectTokens);$("collectEthBtn").onclick=()=>act(collectEth);$("rebalanceBtn").onclick=()=>act(rebalance);
 $("clearLogBtn").onclick=()=>$("log").textContent="";
-$("toggleAutoRebalanceBtn").onclick=()=>{st.auto=!st.auto;localStorage.setItem("lowcap_auto_rebalance",st.auto?"on":"off");autoUI();log("Auto-Rebalance "+(st.auto?"enabled":"paused"))};
+$("notifyBtn").onclick=()=>act(toggleAlerts);$("wakeBtn").onclick=()=>act(toggleWakeLock);$("toggleAutoRebalanceBtn").onclick=()=>{st.auto=!st.auto;localStorage.setItem("lowcap_auto_rebalance",st.auto?"on":"off");autoUI();log("Auto-Rebalance "+(st.auto?"enabled":"paused"))};
 ["capitalUsd","reserveUsd","slippagePct"].forEach(id=>$(id).addEventListener("input",strategy));
 document.addEventListener("visibilitychange",()=>{$("browserStatus").textContent=document.hidden?"Background tab — browser may throttle":"Live monitor every 15 sec"});
 
 const saved=localStorage.getItem("lowcap_last_token_id");if(saved)$("tokenId").value=saved;
 $("feeTier").value="3000";$("rangePct").value="3";strategy();autoUI();
-log("v4 Pro ready: fixed 0.30% fee tier, fixed ±3% range, auto-reconnect and auto-rebalance armed.");
+log("v4.1 Hosted Pro ready: fixed 0.30% fee tier, fixed ±3% range, auto-reconnect and auto-rebalance armed.");
 setTimeout(autoConnect,350);
 })();
